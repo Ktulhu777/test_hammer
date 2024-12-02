@@ -1,0 +1,8 @@
+Django
+djangorestframework
+redis==5.0.0
+hiredis==2.2.3
+drf-yasg==1.21.8
+gunicorn
+django-environ==0.10.0
+psycopg2==2.9.7

@@ -1,0 +1,51 @@
+volumes:
+  pgdata:
+  static:
+  media:
+  redisdata:
+
+services:
+  django:
+    build:
+      context: .
+    ports:
+      - '8000:8000'
+    container_name: service_django
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+      - static:/app/static
+      - media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "python manage.py makemigrations && \
+             python manage.py migrate && \
+             python manage.py collectstatic --no-input && \
+             gunicorn --workers=4 --reload --max-requests=1000 test_hammer.wsgi -b 0.0.0.0:8000"
+
+  postgres:
+    image: postgres:alpine
+    container_name: service_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}  # Теперь база будет 'test_hammer_db' из файла .env
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: service_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
